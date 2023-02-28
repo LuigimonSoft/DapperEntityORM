@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "yVR0lmra+izF4JH0lErqp4lRGXmKfTS8knC0+5NaHhn6eBO+9HX2/t+gcQg71lKi5yeE2YZ92aLJsCsBo2e9/A==",
+  "success": true,
+  "projectFilePath": "D:\\Carlos\\Proyectos\\dotnet\\DapperEntityORM\\DapperEntityORM\\DapperEntityORM.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\lcarrillo-astek\\.nuget\\packages\\dapper\\2.0.123\\dapper.2.0.123.nupkg.sha512",
+    "C:\\Users\\lcarrillo-astek\\.nuget\\packages\\fluentvalidation\\11.5.1\\fluentvalidation.11.5.1.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1803",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "You are running the 'restore' operation with an 'HTTP' source, 'http://nuget.indigo.ca/api/odata'. Non-HTTPS access will be removed in a future version. Consider migrating to an 'HTTPS' source."
+    }
+  ]
+}
