@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DapperEntityORM.Enums;
+using System.Data.SqlClient;
 
 namespace DapperEntityORM
 {
@@ -13,7 +14,7 @@ namespace DapperEntityORM
         public string _encapsulation;
         private string _getIdentitySql;
         private string _getPagedListSql;
-        private string _connectionString { get; }
+        private readonly string _connectionString;
 
         public DataBase(DataBaseTypes dialect, string connectionString)
         {
@@ -21,6 +22,13 @@ namespace DapperEntityORM
             _connectionString = connectionString;
         }
 
+        /// <summary>
+        ///   Gets the connection.
+        /// </summary>
+        public SqlConnection Connection => new System.Data.SqlClient.SqlConnection(_connectionString);
+        public string Encapsulation => _encapsulation;
+        public string GetIdentitySql => _getIdentitySql;
+        public string GetPagedListSql => _getPagedListSql;
         public DataBaseTypes TipoBaseDatos
         {
             set
