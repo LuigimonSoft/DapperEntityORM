@@ -20,6 +20,7 @@ namespace DapperEntityORM
         {
             _dialect = dialect;
             _connectionString = connectionString;
+            DataBaseType = dialect;
         }
 
         /// <summary>
@@ -29,7 +30,7 @@ namespace DapperEntityORM
         public string Encapsulation => _encapsulation;
         public string GetIdentitySql => _getIdentitySql;
         public string GetPagedListSql => _getPagedListSql;
-        public DataBaseTypes TipoBaseDatos
+        public DataBaseTypes DataBaseType
         {
             set
             {
