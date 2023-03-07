@@ -23,7 +23,7 @@ namespace DapperEntityORM.Resolvers
             var tableattr = type.GetCustomAttributes(true).SingleOrDefault(attr => attr.GetType().Name == typeof(TableAttribute).Name) as dynamic;
             if (tableattr != null)
             {
-                tableName = Encapsulate(tableattr.Name, encapsulation);
+                tableName = Encapsulate(tableattr.TableName, encapsulation);
                 try
                 {
                     if (!String.IsNullOrEmpty(tableattr.Schema))

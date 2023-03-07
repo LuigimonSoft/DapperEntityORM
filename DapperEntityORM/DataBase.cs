@@ -64,5 +64,7 @@ namespace DapperEntityORM
             }
             get { return _dialect; }
         }
+
+        
     }
 }

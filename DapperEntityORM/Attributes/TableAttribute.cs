@@ -17,6 +17,8 @@ namespace DapperEntityORM.Attributes
         /// <value>default value is 0</value>
         public int TableNumber { get; set; }
 
+        public string Schema { get; set; }
+
         /// <summary>
         /// TableAttribute constructor
         /// </summary>

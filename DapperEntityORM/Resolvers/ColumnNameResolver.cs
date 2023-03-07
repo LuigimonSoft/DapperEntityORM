@@ -26,12 +26,31 @@ namespace DapperEntityORM.Resolvers
             var columnattr = propertyInfo.GetCustomAttributes(true).SingleOrDefault(attr => attr.GetType().Name == typeof(ColumnAttribute).Name) as dynamic;
             if (columnattr != null)
             {
+                if (!String.IsNullOrEmpty(columnattr.ColumnName))
+                {
+                    MapColumn = true;
+                    columnName = Encapsulate(columnattr.ColumnName, encapsulation);
+                    if (System.Diagnostics.Debugger.IsAttached)
+                        System.Diagnostics.Trace.WriteLine(String.Format("Column name for type overridden from {0} to {1}", propertyInfo.Name, columnName));
+                }
+            }
+            return columnName;
+        }
+
+        public virtual string ResolveKeyColumnName(PropertyInfo propertyInfo, string encapsulation, out bool MapColumn)
+        {
+            MapColumn = false;
+            var columnName = Encapsulate(propertyInfo.Name, encapsulation);
+
+            var columnattr = propertyInfo.GetCustomAttributes(true).SingleOrDefault(attr => attr.GetType().Name == typeof(KeyAttribute).Name) as dynamic;
+            if (columnattr != null)
+            {
                 if (!String.IsNullOrEmpty(columnattr.Name))
                 {
                     MapColumn = true;
                     columnName = Encapsulate(columnattr.Name, encapsulation);
                     if (System.Diagnostics.Debugger.IsAttached)
-                        System.Diagnostics.Trace.WriteLine(String.Format("Column name for type overridden from {0} to {1}", propertyInfo.Name, columnName));
+                        System.Diagnostics.Trace.WriteLine(String.Format("Key column name for type overridden from {0} to {1}", propertyInfo.Name, columnName));
                 }
             }
             return columnName;
