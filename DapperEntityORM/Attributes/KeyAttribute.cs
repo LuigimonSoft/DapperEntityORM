@@ -42,5 +42,9 @@ namespace DapperEntityORM.Attributes
             Length = length;
             DefaultValue = defaultValue;
         }
+
+        public KeyAttribute()
+        {
+        }
     }
 }

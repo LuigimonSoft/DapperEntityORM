@@ -10,5 +10,6 @@ namespace DapperEntityORM.Resolvers.Interfaces
     public interface IColumnNameResolver
     {
         string ResolveColumnName(PropertyInfo propertyInfo, string _encapsulation, out bool MapColumn);
+        string ResolveKeyColumnName(PropertyInfo propertyInfo, string _encapsulation, out bool MapColumn);
     }
 }
