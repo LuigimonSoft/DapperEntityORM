@@ -2,42 +2,49 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection.Emit;
 using DapperEntityORM.Resolvers;
 using DapperEntityORM.Resolvers.Interfaces;
 using DapperEntityORM.Attributes;
 using System.Runtime.CompilerServices;
-using System.Linq.Expressions;
-using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.Intrinsics.X86;
+using PropertyChanged;
+using System.Diagnostics;
 
 namespace DapperEntityORM
 {
+    [AddINotifyPropertyChangedInterface]
     public class Entity<T> : INotifyPropertyChanged
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private DataBase? _database;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private ITableNameResolver _tableNameResolver = new TableNameResolver();
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private IColumnNameResolver _columnNameResolver = new ColumnNameResolver();
 
         private string _tableName;
         private string _primaryKeyColumn;
         private List<string> _columns;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private List<PropertyInfo> _columnsModified;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        protected void OnPropertyChanged(string? propertyName = null)
         {
             OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
         }
-
         protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
         {
             if (e.PropertyName != null)
             {
                 PropertyInfo? property = typeof(T).GetProperty(e.PropertyName);
-                if(property != null)
+                if (property != null && property.CustomAttributes.Where(x => x.AttributeType == typeof(ColumnAttribute)).Count()>0)
                 {
                     if (!_columnsModified.Contains(property))
                         _columnsModified.Add(property);
@@ -46,11 +53,11 @@ namespace DapperEntityORM
             PropertyChanged?.Invoke(this, e);
         }
 
-        public Entity() 
+        public Entity()
         {
             _columnsModified = new List<PropertyInfo>();
         }
-        public Entity(DataBase dataBase) 
+        public Entity(DataBase dataBase)
         {
             _database = dataBase;
             init();
@@ -115,7 +122,7 @@ namespace DapperEntityORM
             {
                 string columnName = getColumnName(propertyInfo, out bool isMapColumn);
                 //if (!isMapColumn)
-                    columnNames.Add(columnName);
+                columnNames.Add(columnName);
             }
             return columnNames;
         }
@@ -133,9 +140,9 @@ namespace DapperEntityORM
         public bool Load()
         {
             bool mapColum;
-            string idName = _columnNameResolver.ResolveKeyColumnName(GetKeyProperty(this.GetType()), _database.Encapsulation,out mapColum);
+            string idName = _columnNameResolver.ResolveKeyColumnName(GetKeyProperty(this.GetType()), _database.Encapsulation, out mapColum);
             object? idValue = GetKeyProperty(GetType()).GetValue(this);
-            var EntityLoaded = Select(_database).Where($"{idName}=@{idName.Replace("[","").Replace("]","")}",new List<object>() { idValue }).Single();
+            var EntityLoaded = Select(_database).Where($"{idName}=@{idName.Replace("[", "").Replace("]", "")}", new List<object>() { idValue }).Single();
             if (EntityLoaded != null)
             {
                 foreach (var property in EntityLoaded.GetType().GetProperties())
@@ -146,20 +153,20 @@ namespace DapperEntityORM
                 _columnsModified.Clear();
                 return true;
             }
-           
+
             return false;
         }
 
-        public bool Update() 
+        public bool Update()
         {
             _columnsModified.Clear();
-            return false; 
+            return false;
         }
 
         public bool Delete()
         {
             _columnsModified.Clear();
-            return false; 
+            return false;
         }
 
         public bool Insert()
@@ -173,10 +180,10 @@ namespace DapperEntityORM
         #region Static
         public static QueryBuilder<T> Select(DataBase dataBase)
         {
-            return new QueryBuilder<T>(dataBase).Select(); 
+            return new QueryBuilder<T>(dataBase).Select();
         }
 
-        
+
         #endregion
     }
 }
