@@ -157,6 +157,18 @@ namespace DapperEntityORM
             return false;
         }
 
+        public bool Load(object primaryKeyValue)
+        {
+            GetKeyProperty(GetType()).SetValue(this, primaryKeyValue);
+            return Load();
+        }
+
+        public bool Load(object primaryKeyValue, DataBase database)
+        {
+            this._database = database;
+            return Load(primaryKeyValue);
+        }
+
         public bool Update()
         {
             _columnsModified.Clear();
