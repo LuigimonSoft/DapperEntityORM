@@ -18,7 +18,7 @@ namespace DapperEntityORM.Attributes
         /// <param name="relationtable"></param>
         /// <param name="foreignKey"></param>
         /// <param name="tableNumber"></param>
-        public RelationAttribute(string relationtable, string foreignKey, int tableNumber = 0)
+        public RelationAttribute( string foreignKey, string relationtable="", int tableNumber = 0)
         {
             this.RelationTable = relationtable;
             this.ForeignKey = foreignKey;
