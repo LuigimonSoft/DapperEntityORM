@@ -93,12 +93,7 @@ namespace DapperEntityORM
 
         public List<T> ToList()
         {
-            using(IDbConnection Conexion = _dataBase.Connection)
-            {
-                var queryrest = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).ToList();
-                LoadRelation(queryrest[0]);
-                return queryrest;
-            }
+            return ToEnumerable().ToList();
         }
 
         public IEnumerable<T> ToEnumerable()
@@ -106,7 +101,13 @@ namespace DapperEntityORM
             using (IDbConnection Conexion = _dataBase.Connection)
             {
                 var queryrest = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters);
-                LoadRelation(queryrest.First());
+                for (int x = 0; x < queryrest.Count(); x++)
+                {
+                    Type TypeElement = queryrest.ElementAt(x).GetType();
+                    TypeElement.GetMethod("SetDataBase").Invoke(queryrest.ElementAt(x), new[] { _dataBase });
+                    TypeElement.GetMethod("SetisNoNew").Invoke(queryrest.ElementAt(x), null);
+                    LoadRelation(queryrest.ElementAt(x));
+                }
                 return queryrest;
             }
         }
@@ -116,7 +117,12 @@ namespace DapperEntityORM
             using (IDbConnection Conexion = _dataBase.Connection)
             {
                 var values = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).ToList();
-                LoadRelation(values[0]);
+                for (int x = 0; x < values.Count; x++)
+                {
+                    values[x].GetType().GetMethod("SetDataBase").Invoke(values[x], new[] { _dataBase });
+                    values[x].GetType().GetMethod("SetisNoNew").Invoke(values[x], null);
+                    LoadRelation(values[x]);
+                }
 
                 Dictionary<object, T> ResDic = new Dictionary<object, T>();
                 foreach ( T value in values)
@@ -132,8 +138,8 @@ namespace DapperEntityORM
         {
             using (IDbConnection Conexion = _dataBase.Connection)
             {
-                var values = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).ToList();
-                LoadRelation(values[0]);
+                var values = ToList();
+               
                 Dictionary<string, T> ResDic = new Dictionary<string, T>();
                 foreach (T value in values)
                 {
@@ -148,8 +154,8 @@ namespace DapperEntityORM
         {
             using (IDbConnection Conexion = _dataBase.Connection)
             {
-                var values = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).ToList();
-                LoadRelation(values[0]);
+                var values = ToList();
+                
                 Dictionary<Guid, T> ResDic = new Dictionary<Guid, T>();
                 foreach (T value in values)
                 {
@@ -164,8 +170,8 @@ namespace DapperEntityORM
         {
             using (IDbConnection Conexion = _dataBase.Connection)
             {
-                var values = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).ToList();
-                LoadRelation(values[0]);
+                var values = ToList();
+                
                 Dictionary<int, T> ResDic = new Dictionary<int, T>();
                 foreach (T value in values)
                 {
@@ -185,6 +191,8 @@ namespace DapperEntityORM
                 else
                 {
                     var queryrest = Conexion.Query<T>(BuildSelectQuery(), _dynamicParameters).FirstOrDefault();
+                    queryrest.GetType().GetMethod("SetDataBase").Invoke(queryrest, new[] { _dataBase });
+                    queryrest.GetType().GetMethod("SetisNoNew").Invoke(queryrest, null);
                     queryrest = LoadRelation(queryrest);
                     return queryrest;
                 }
