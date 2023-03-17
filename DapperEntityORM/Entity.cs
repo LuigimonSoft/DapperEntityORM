@@ -14,6 +14,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.Intrinsics.X86;
 using PropertyChanged;
 using System.Diagnostics;
+using System.Data;
+using Dapper;
 
 namespace DapperEntityORM
 {
@@ -27,6 +29,7 @@ namespace DapperEntityORM
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private IColumnNameResolver _columnNameResolver = new ColumnNameResolver();
 
+        private bool isNew { set; get; } = true; 
         private string _tableName;
         private string _primaryKeyColumn;
         private List<string> _columns;
@@ -49,7 +52,10 @@ namespace DapperEntityORM
                     if (!_columnsModified.Contains(property))
                         _columnsModified.Add(property);
                 }
+                if (property != null && property.CustomAttributes.Where(x => x.AttributeType == typeof(KeyAttribute)).Count() > 0)
+                    isNew = false;
             }
+
             PropertyChanged?.Invoke(this, e);
         }
 
@@ -61,6 +67,7 @@ namespace DapperEntityORM
         {
             _database = dataBase;
             init();
+            isNew = true;
         }
 
         private void init()
@@ -75,6 +82,10 @@ namespace DapperEntityORM
         {
             _database = dataBase;
             init();
+        }
+
+        public void SetisNoNew()
+        {             isNew = false;
         }
 
         #region Get Attributes
@@ -126,7 +137,10 @@ namespace DapperEntityORM
             }
             return columnNames;
         }
-
+        private List<PropertyInfo> GetPropertiesRelation(Type type)
+        {
+            return type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == typeof(RelationAttribute).Name)).ToList();
+        }
         private PropertyInfo? GetKeyProperty(Type type)
         {
             var tp = type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == typeof(KeyAttribute).Name)).ToList();
@@ -151,6 +165,7 @@ namespace DapperEntityORM
                     property.SetValue(this, value);
                 }
                 _columnsModified.Clear();
+                isNew = false;
                 return true;
             }
 
@@ -160,18 +175,80 @@ namespace DapperEntityORM
         public bool Load(object primaryKeyValue)
         {
             GetKeyProperty(GetType()).SetValue(this, primaryKeyValue);
+            if (_database == null)
+                throw new Exception("The entity must have a database");
+            if (string.IsNullOrEmpty(_tableName))
+                init();
             return Load();
         }
 
         public bool Load(object primaryKeyValue, DataBase database)
         {
             this._database = database;
+            if(string.IsNullOrEmpty(_tableName))
+                init();
             return Load(primaryKeyValue);
         }
 
         public bool Update()
         {
-            _columnsModified.Clear();
+            PropertyInfo? propertyKey = (PropertyInfo?)GetKeyProperty(GetType());
+            if (propertyKey == null)
+                throw new Exception("The entity must have a key property");
+            if(_database==null)
+                throw new Exception("The entity must have a database");
+
+            object? idValue = propertyKey.GetValue(this);
+            if (_columnsModified.Count > 0 && !isNew && idValue!=null)
+            {
+                int resId = -1;
+                string sql = $"UPDATE {_tableName} SET ";
+                string setSQL = string.Empty;
+                foreach (var property in _columnsModified)
+                {
+                    string columnName = getColumnName(property, out bool isMapColumn);
+                    if (setSQL != string.Empty)
+                        setSQL += ",";
+                    setSQL += $" {columnName}=@{property.Name}";
+                }
+                
+                string idName = _columnNameResolver.ResolveKeyColumnName(propertyKey, _database.Encapsulation, out bool mapColum);
+                string whereSQL = $" WHERE { idName}=@{ idName.Replace("[", "").Replace("]", "")}";
+                using (IDbConnection Conexion = _database.Connection)
+                {
+                    resId = Conexion.Execute(sql + setSQL + whereSQL, this);
+                    _columnsModified.Clear();
+                    isNew = false;
+                    if(resId > 0)
+                    {
+                        foreach (PropertyInfo propertyrelation in GetPropertiesRelation(this.GetType()))
+                        {
+                            var propertyValue = propertyrelation.GetValue(this, null) as dynamic;
+                            if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                            {
+                                for(int x=0; x< propertyValue.Count; x++)
+                                    propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                            }
+                            else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                            {
+                                Dictionary<int, string> pv = new Dictionary<int, string>();
+                                foreach(var pkey in propertyValue.Keys)
+                                    propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
+                            }
+                            else
+                                propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
+                        }
+                        return true;
+                    }
+                    else 
+                        return false;
+                }
+                
+            }
+            else if(isNew)
+                return Insert();
+            
+            
             return false;
         }
 
