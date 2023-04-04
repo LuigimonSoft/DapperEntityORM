@@ -16,6 +16,7 @@ using PropertyChanged;
 using System.Diagnostics;
 using System.Data;
 using Dapper;
+using System.Net.NetworkInformation;
 
 namespace DapperEntityORM
 {
@@ -67,6 +68,7 @@ namespace DapperEntityORM
         {
             _database = dataBase;
             init();
+            _columnsModified = new List<PropertyInfo>();
             isNew = true;
         }
 
@@ -75,7 +77,7 @@ namespace DapperEntityORM
             _tableName = getTableName(this);
             _primaryKeyColumn = getKeyColumnName(this);
             _columns = getColumnsNames();
-            _columnsModified = new List<PropertyInfo>();
+            
         }
 
         public void SetDataBase(DataBase dataBase)
@@ -224,19 +226,31 @@ namespace DapperEntityORM
                         foreach (PropertyInfo propertyrelation in GetPropertiesRelation(this.GetType()))
                         {
                             var propertyValue = propertyrelation.GetValue(this, null) as dynamic;
-                            if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                            if (propertyValue != null)
                             {
-                                for(int x=0; x< propertyValue.Count; x++)
-                                    propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                                if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                                {
+                                    for (int x = 0; x < propertyValue.Count; x++)
+                                    {
+                                        propertyValue[x].GetType().GetMethod("SetDataBase").Invoke(propertyValue[x], new object[] { _database });
+                                        propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                                    }
+                                }
+                                else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                                {
+                                    Dictionary<int, string> pv = new Dictionary<int, string>();
+                                    foreach (var pkey in propertyValue.Keys)
+                                    {
+                                        propertyValue[pkey].GetType().GetMethod("SetDataBase").Invoke(propertyValue[pkey], new object[] { _database });
+                                        propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
+                                    }
+                                }
+                                else
+                                {
+                                    propertyValue.GetType().GetMethod("SetDataBase").Invoke(propertyValue, new object[] { _database });
+                                    propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
+                                }
                             }
-                            else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                            {
-                                Dictionary<int, string> pv = new Dictionary<int, string>();
-                                foreach(var pkey in propertyValue.Keys)
-                                    propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
-                            }
-                            else
-                                propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
                         }
                         return true;
                     }
@@ -258,10 +272,119 @@ namespace DapperEntityORM
             return false;
         }
 
-        public bool Insert()
+        public bool Insert(DataBase database = null)
         {
-            _columnsModified.Clear();
-            return false;
+            if (database != null)
+            {
+                _database = database;
+                _tableName = getTableName(this);
+                _primaryKeyColumn = getKeyColumnName(this);
+                _columns = getColumnsNames();
+            }
+            if (_database == null)
+                throw new Exception("The entity must have a database");
+
+            string InserColumnsSQL = string.Empty;
+            string InsertValuesSQL = string.Empty;
+            string sqlScopeIdentity = string.Empty;
+            bool getIdGen = false;
+            int resId = -1;
+
+            PropertyInfo? propertyKey = (PropertyInfo?)GetKeyProperty(GetType());
+
+            if (_columnsModified.Count > 0 && isNew)
+            {
+                foreach (var property in _columnsModified)
+                {
+                    string columnName = getColumnName(property, out bool isMapColumn);
+                    if (InserColumnsSQL != string.Empty)
+                    {
+                        InserColumnsSQL += ",";
+                        InsertValuesSQL += ",";
+                    }
+                    InserColumnsSQL += $" {columnName}";
+                    InsertValuesSQL += $" @{property.Name}";
+                }
+                if(propertyKey!=null)
+                {
+                    KeyAttribute keyattribute = (KeyAttribute)propertyKey.GetCustomAttributes(true).Where(attr => attr.GetType() == typeof(KeyAttribute)).Single();
+                    object? idValue = propertyKey.GetValue(this);
+                    
+                    if (idValue == null)
+                    {
+                        if (keyattribute.IsIdentity && (propertyKey.PropertyType == typeof(int?) || propertyKey.PropertyType == typeof(Int32?) || propertyKey.PropertyType == typeof(Int16?)))
+                            getIdGen = true;  
+                    }
+                    else
+                    {
+                        if (keyattribute.IsIdentity && (propertyKey.PropertyType == typeof(int) || propertyKey.PropertyType == typeof(Int32) || propertyKey.PropertyType == typeof(Int16)) && (int)idValue == 0)
+                            getIdGen = true;
+                    }
+
+                    if(getIdGen)
+                    {
+                        sqlScopeIdentity = "; SELECT SCOPE_IDENTITY() as Id";
+                    }
+                    else
+                    {
+                        string columnName = getColumnName(propertyKey, out bool isMapColumn);
+                        InserColumnsSQL += $", {columnName}";
+                        InsertValuesSQL += $", @{propertyKey.Name}";
+                    }
+                    
+                }
+                string sql = $"INSERT INTO {_tableName} ({InserColumnsSQL}) VALUES ({InsertValuesSQL}){sqlScopeIdentity}";
+
+                using (IDbConnection Conexion = _database.Connection)
+                {
+                    if (getIdGen)
+                    {
+                        resId = Conexion.Query<int>(sql, this).Single();
+                        propertyKey.SetValue(this, resId);
+
+                        foreach (PropertyInfo propertyrelation in GetPropertiesRelation(this.GetType()))
+                        {
+                            var propertyValue = propertyrelation.GetValue(this, null) as dynamic;
+                            RelationAttribute attributerelation = propertyrelation.GetCustomAttributes(true).Where(attr => attr.GetType() == typeof(RelationAttribute)).Single() as RelationAttribute;
+                            string foreignKeyName = attributerelation.ForeignKey;
+                            if (propertyValue != null)
+                            {
+                                if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                                {
+                                    for (int x = 0; x < propertyValue.Count; x++)
+                                    {
+                                        propertyValue[x].GetType().GetProperty(foreignKeyName).SetValue(propertyValue[x], resId);
+                                        {
+                                            propertyValue[x].GetType().GetMethod("SetDataBase").Invoke(propertyValue[x], new object[] { _database });
+                                            propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                                        }
+                                    }
+                                }
+                                else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                                {
+                                    Dictionary<int, string> pv = new Dictionary<int, string>();
+                                    foreach (var pkey in propertyValue.Keys)
+                                    {
+                                        propertyValue[pkey].GetType().GetMethod("SetDataBase").Invoke(propertyValue[pkey], new object[] { _database });
+                                        propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
+                                    }
+                                }
+                                else
+                                {
+                                    propertyValue.GetType().GetMethod("SetDataBase").Invoke(propertyValue, new object[] { _database });
+                                    propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
+                                }
+                            }
+                        }
+                    }
+                    else
+                        resId = Conexion.Execute(sql, this);
+                    _columnsModified.Clear();
+                    return resId > 0;
+                }
+            }
+            else
+                return false;
         }
 
         #endregion
