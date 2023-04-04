@@ -27,7 +27,10 @@ namespace DapperEntityORM.Attributes
         /// The default value of the primary key
         /// </summary>
         public object DefaultValue { get; set; }
-
+        /// <summary>
+        /// The primary key is an identity
+        /// </summary>
+        public bool IsIdentity { get; set; }
         /// <summary>
         //// The constructor of the KeyAttribute
         /// </summary>
