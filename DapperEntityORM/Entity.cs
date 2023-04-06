@@ -2,21 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using DapperEntityORM.Resolvers;
 using DapperEntityORM.Resolvers.Interfaces;
 using DapperEntityORM.Attributes;
-using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Collections;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.Intrinsics.X86;
 using PropertyChanged;
 using System.Diagnostics;
 using System.Data;
 using Dapper;
-using System.Net.NetworkInformation;
 
 namespace DapperEntityORM
 {
@@ -235,6 +228,7 @@ namespace DapperEntityORM
                                         propertyValue[x].GetType().GetMethod("SetDataBase").Invoke(propertyValue[x], new object[] { _database });
                                         propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
                                     }
+                                    
                                 }
                                 else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                                 {
@@ -250,6 +244,8 @@ namespace DapperEntityORM
                                     propertyValue.GetType().GetMethod("SetDataBase").Invoke(propertyValue, new object[] { _database });
                                     propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
                                 }
+
+                               
                             }
                         }
                         return true;
@@ -268,6 +264,37 @@ namespace DapperEntityORM
 
         public bool Delete()
         {
+            PropertyInfo? propertyKey = (PropertyInfo?)GetKeyProperty(GetType());
+            if (propertyKey == null)
+                throw new Exception("The entity must have a key property");
+            if (_database == null)
+                throw new Exception("The entity must have a database");
+
+            object? idValue = propertyKey.GetValue(this);
+            if (idValue == null)
+                throw new Exception("The entity must have a key value");
+            if (idValue == DBNull.Value)
+                throw new Exception("The entity must have a key value");
+            if (idValue is int)
+            {
+                if((int)idValue  == 0) 
+                    throw new Exception("The entity must have a key value");
+            }
+            if (!isNew && idValue != null)
+            {
+                int resId = -1;
+                string sql = $"DELETE FROM {_tableName} ";
+                string idName = _columnNameResolver.ResolveKeyColumnName(propertyKey, _database.Encapsulation, out bool mapColum);
+                string whereSQL = $" WHERE { idName}=@{ idName.Replace("[", "").Replace("]", "")}";
+                using (IDbConnection Conexion = _database.Connection)
+                {
+                    resId = Conexion.Execute(sql + whereSQL, this);
+                    _columnsModified.Clear();
+                    isNew = false;
+                }
+
+            }
+            
             _columnsModified.Clear();
             return false;
         }

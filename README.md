@@ -12,7 +12,7 @@ Here's an example of a model that represents an "Employee" table:
 [Table("Employees")]
 public class Employees : Entity<Employees>
 {
-    [Key]
+    [Key(IsIdentity = true)]
     public int EmployeeId { get; set; }
     [Column]
     public string FirstName { get; set; }
@@ -31,7 +31,7 @@ public class Employees : Entity<Employees>
 [Table("Addresses")]
 public class Addresses : Entity<Address>
 {
-    [Key]
+    [Key(IsIdentity = true)]
     public int Id { get; set; }
     [Column]
     public string Address { get; set; }
@@ -46,7 +46,7 @@ public class Addresses : Entity<Address>
 [Table("Departments")]
 public class Departments : Entity<Departments>
 {
-    [Key]
+    [Key(IsIdentity = true)]
     public int Id { get; set; }
     [Column]
     public string Name { get; set; }
@@ -67,14 +67,28 @@ Employees employee = Employees.Select(database).Where(X => X.Id== 2).Single();
 or 
 
 ``` csharp
-Employees employee = new Employees();
-employee.Load(2,database);
+Employees employee = new Employees(database);
+employee.Load(2);
 ```
+Now with the employee you can update, delete or insert it to the database with the following methods:
 
+### update
+```csharp
+employee.Update();
+```
+### insert
+```csharp
+employee.Insert();
+```
+### delete
+```csharp
+employee.Delete();
+```
+and if you want to insert or update the employee with his department and address information you can only add an item to the list address or modified the deparment data and the method update will do the rest for you. However, to delete a record, you must use the Delete function, and for linked tables, you will have to manually delete them using their respective Delete method.
 
 DapperEntityORM also supports more advanced database operations such as filtering, ordering, and grouping records. You can use the `Select` method to retrieve records from the database with various filtering options, such as `WHERE`, `GROUP BY`, and `HAVING`. You can also use the `OrderBy` and `OrderByDescending` methods to sort records by one or more columns. Additionally, you can use the `Count`, `Sum`, `Min`, `Max`, and `Average` methods to retrieve aggregate data from the database.
 
-DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method.
+DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
 
 ## Installation
 You can install DapperEntityORM using NuGet:
