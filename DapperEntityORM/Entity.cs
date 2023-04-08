@@ -10,11 +10,12 @@ using PropertyChanged;
 using System.Diagnostics;
 using System.Data;
 using Dapper;
+using DapperEntityORM.Statics;
+using System.Text.Json.Serialization;
 
 namespace DapperEntityORM
 {
-    [AddINotifyPropertyChangedInterface]
-    public class Entity<T> : INotifyPropertyChanged
+    public class Entity<T> : EntityStaticMethods<T>, INotifyPropertyChanged
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private DataBase? _database;
@@ -82,6 +83,9 @@ namespace DapperEntityORM
         public void SetisNoNew()
         {             isNew = false;
         }
+
+        [JsonIgnore]
+        public T Value { get; set; }
 
         #region Get Attributes
         private static IEnumerable<PropertyInfo> getPropertyKey(Type type)
@@ -416,13 +420,5 @@ namespace DapperEntityORM
 
         #endregion
 
-        #region Static
-        public static QueryBuilder<T> Select(DataBase dataBase)
-        {
-            return new QueryBuilder<T>(dataBase).Select();
-        }
-
-
-        #endregion
     }
 }
