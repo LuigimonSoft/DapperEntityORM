@@ -213,7 +213,7 @@ namespace DapperEntityORM
                     typeArgument = propertyrelation.PropertyType.GenericTypeArguments.Single();
                 else 
                     typeArgument = propertyrelation.PropertyType;
-                var resSelect = typeArgument.BaseType.GetMethod("Select").Invoke(propertyrelation, new object[] { _dataBase }) as dynamic;
+                var resSelect = typeArgument.BaseType.BaseType.GetMethod("Select").Invoke(propertyrelation, new object[] { _dataBase }) as dynamic;
                 var resWhere = resSelect.Where($"{relationColumn} = @{relationColumn}", new List<object> { getPropertyKey(typeof(T)).GetValue(queryrest) });
                 if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
                     propertyrelation.SetValue(queryrest, resWhere.ToList());
