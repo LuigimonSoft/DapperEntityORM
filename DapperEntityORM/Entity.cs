@@ -12,6 +12,7 @@ using System.Data;
 using Dapper;
 using DapperEntityORM.Statics;
 using System.Text.Json.Serialization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DapperEntityORM
 {
@@ -84,8 +85,129 @@ namespace DapperEntityORM
         {             isNew = false;
         }
 
-        [JsonIgnore]
-        public T Value { get; set; }
+        public bool IsValid(out List<string> Errors,bool throwErrors=false)
+        {
+            bool result = true;
+            string ErrorMessage=string.Empty;
+            Errors = new List<string>();
+            List<string> ErrorRelations = new List<string>();
+
+            foreach (var property in this.GetType().GetProperties())
+            {
+                if (property.CustomAttributes.Where(x => x.AttributeType == typeof(ColumnAttribute)).Count() > 0)
+                {
+                    var column = property.GetCustomAttribute<ColumnAttribute>();
+                    if (column != null)
+                    {
+                        if (property.GetValue(this) != null)
+                        {
+                            if (column.MaxLength > 0 && property.GetValue(this).ToString().Trim().Length > column.MaxLength)
+                            {
+                                result = false;
+                                if (column.ErrorMaximunMessage != null)
+                                    ErrorMessage = column.ErrorMaximunMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} is greater than the maximum length of {1}", property.Name, column.MaxLength);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
+                            if (column.MinLength > 0 && property.GetValue(this).ToString().Trim().Length < column.MinLength)
+                            {
+                                result = false;
+                                if (column.ErrorMinimumMessage != null)
+                                    ErrorMessage = column.ErrorMinimumMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} is less than the minimum length of {1}", property.Name, column.MinLength);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
+                            if (!column.AllowEmpty && property.GetValue(this).ToString().Trim().Length == 0)
+                            {
+                                result = false;
+                                if (column.ErrorEmptyMessage != null)
+                                    ErrorMessage = column.ErrorEmptyMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} is empty", property.Name);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
+                            if (column.RegExPattern != null && !System.Text.RegularExpressions.Regex.IsMatch(property.GetValue(this).ToString(), column.RegExPattern))
+                            {
+                                result = false;
+                                if (column.ErrorRegExMessage != null)
+                                    ErrorMessage = column.ErrorRegExMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} does not match the regular expression pattern {1}", property.Name, column.RegExPattern);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
+                        }
+                        else
+                        {
+                            if (column.AllowNull == false)
+                            {
+                                result = false;
+                                if (column.ErrorNullMessage != null)
+                                    ErrorMessage = column.ErrorNullMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} is null", property.Name);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
+                        }
+                    }
+                }
+                
+                if (property.CustomAttributes.Where(x => x.AttributeType == typeof(RelationAttribute)).Count() > 0)
+                {
+                    var relation = property.GetCustomAttribute<RelationAttribute>();
+                    if (!relation.IgnoreInInsert || !relation.IgnoreInUpdate)
+                    {
+                        if (property.GetValue(this) != null)
+                        {
+                            var propertyValue = property.GetValue(this) as dynamic;
+                            if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                            {
+                                for (int x = 0; x < propertyValue.Count; x++)
+                                {
+                                    object[] parameters = new object[] { new List<string>(), throwErrors };
+                                    ((MethodInfo[])propertyValue[x].GetType().GetMethods()).Where(m => m.Name == "IsValid" && m.ToString() == "Boolean IsValid(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[x], parameters);
+                                    addError(ErrorRelations, (List<string>)parameters[0]);
+                                }
+
+                            }
+                            else if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                            {
+                                Dictionary<int, string> pv = new Dictionary<int, string>();
+                                foreach (var pkey in propertyValue.Keys)
+                                {
+                                    object[] parameters = new object[] { new List<string>(), throwErrors };
+                                    ((MethodInfo[])propertyValue[pkey].GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[pkey], parameters);
+                                    addError(ErrorRelations, (List<string>)parameters[0]);
+                                }
+                            }
+                            else
+                            {
+                                object[] parameters = new object[] { new List<string>(), throwErrors };
+                                ((MethodInfo[])propertyValue.GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue, parameters);
+                                addError(ErrorRelations, (List<string>)parameters[0]);
+                            }
+                        }
+                    }
+                }
+            }
+            addError(Errors, ErrorRelations);
+
+            return result && ErrorRelations.Count==0;
+        }
+
+        private void setError(List<string> Errors, string ErrorMessage ,bool throwErrors = false)
+        {
+            if (throwErrors)
+                throw new Exception(ErrorMessage);
+            else
+                Errors.Add(ErrorMessage);
+        }
 
         #region Get Attributes
         private static IEnumerable<PropertyInfo> getPropertyKey(Type type)
@@ -189,16 +311,80 @@ namespace DapperEntityORM
             return Load(primaryKeyValue);
         }
 
-        public bool Update()
+        public bool Save()
         {
+            List<string> Errors = new List<string>();
+            return Save(out Errors, true);
+        }
+
+        public bool Save(out List<string> Errors, bool throwErrors = false)
+        {
+            Errors = new List<string>();
             PropertyInfo? propertyKey = (PropertyInfo?)GetKeyProperty(GetType());
             if (propertyKey == null)
-                throw new Exception("The entity must have a key property");
-            if(_database==null)
-                throw new Exception("The entity must have a database");
+            {
+                setError(Errors, "The entity must have a key property", throwErrors);
+                return false;
+            }
 
             object? idValue = propertyKey.GetValue(this);
-            if (_columnsModified.Count > 0 && !isNew && idValue!=null)
+            if (!isNew && idValue != null)
+            {
+                if (idValue.GetType() == typeof(int))
+                {
+                    if ((int)idValue == 0)
+                        return Insert(out Errors, throwErrors);
+                }
+                else if (idValue.GetType() == typeof(string))
+                {
+                    if (string.IsNullOrEmpty((string)idValue))
+                        return Insert(out Errors, throwErrors);
+                }
+                else if (idValue.GetType() == typeof(Guid))
+                {
+                    if ((Guid)idValue == Guid.Empty)
+                        return Insert(out Errors, throwErrors);
+                }
+                return Update(out Errors, throwErrors);
+            }
+            else
+                return Insert(out Errors, throwErrors);
+        }
+
+        public bool Update()
+        {
+            List<string> Errors = new List<string>();
+            return Update(out Errors, true);
+        }
+        public bool Update(out List<string> Errors, bool throwErrors=false)
+        {
+            Errors = new List<string>();
+
+            PropertyInfo? propertyKey = (PropertyInfo?)GetKeyProperty(GetType());
+            if (propertyKey == null)
+                setError(Errors, "The entity must have a key property", throwErrors);
+            if(_database==null)
+                setError(Errors, "The entity must have a database", throwErrors);
+
+            IsValid(out Errors, throwErrors);
+              
+            object? idValue = propertyKey.GetValue(this);
+            if (idValue == null)
+                setError(Errors, "The key value is null", throwErrors);
+            else if(idValue.GetType()==typeof(int))
+                if((int)idValue==0)
+                    setError(Errors, "The key value is 0", throwErrors);
+            else if (idValue.GetType() == typeof(string))
+                if (string.IsNullOrEmpty((string)idValue))
+                    setError(Errors, "The key value is empty", throwErrors);
+            else if (idValue.GetType() == typeof(Guid))
+                if ((Guid)idValue == Guid.Empty)
+                    setError(Errors, "The key value is empty", throwErrors);
+
+            if (Errors.Count > 0)
+                return false;
+
+            if (_columnsModified.Count > 0)
             {
                 int resId = -1;
                 string sql = $"UPDATE {_tableName} SET ";
@@ -230,7 +416,9 @@ namespace DapperEntityORM
                                     for (int x = 0; x < propertyValue.Count; x++)
                                     {
                                         propertyValue[x].GetType().GetMethod("SetDataBase").Invoke(propertyValue[x], new object[] { _database });
-                                        propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                                        object[] parameters = new object[] { new List<string>(), throwErrors };
+                                        ((MethodInfo[])propertyValue[x].GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[x], parameters);
+                                        addError(Errors, (List<string>)parameters[0]);
                                     }
                                     
                                 }
@@ -240,13 +428,17 @@ namespace DapperEntityORM
                                     foreach (var pkey in propertyValue.Keys)
                                     {
                                         propertyValue[pkey].GetType().GetMethod("SetDataBase").Invoke(propertyValue[pkey], new object[] { _database });
-                                        propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
+                                        object[] parameters = new object[] { new List<string>(), throwErrors };
+                                        ((MethodInfo[])propertyValue[pkey].GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[pkey], parameters);
+                                        addError(Errors, (List<string>)parameters[0]);
                                     }
                                 }
                                 else
                                 {
                                     propertyValue.GetType().GetMethod("SetDataBase").Invoke(propertyValue, new object[] { _database });
-                                    propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
+                                    object[] parameters = new object[] { new List<string>(), throwErrors };
+                                    ((MethodInfo[])propertyValue.GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue, parameters);
+                                    addError(Errors, (List<string>)parameters[0]);
                                 }
 
                                
@@ -259,10 +451,7 @@ namespace DapperEntityORM
                 }
                 
             }
-            else if(isNew)
-                return Insert();
-            
-            
+          
             return false;
         }
 
@@ -305,6 +494,12 @@ namespace DapperEntityORM
 
         public bool Insert(DataBase database = null)
         {
+            List<string> Errors = new List<string>();
+            return Insert(out Errors, true, database);
+        }
+        public bool Insert(out List<string> Errors,bool throwErrors = false, DataBase database = null)
+        {
+            Errors = new List<string>();
             if (database != null)
             {
                 _database = database;
@@ -313,7 +508,12 @@ namespace DapperEntityORM
                 _columns = getColumnsNames();
             }
             if (_database == null)
-                throw new Exception("The entity must have a database");
+                setError(Errors, "The entity must have a database", throwErrors);
+
+            IsValid(out Errors, throwErrors);
+
+            if (Errors.Count > 0)
+                return false;
 
             string InserColumnsSQL = string.Empty;
             string InsertValuesSQL = string.Empty;
@@ -387,7 +587,9 @@ namespace DapperEntityORM
                                         propertyValue[x].GetType().GetProperty(foreignKeyName).SetValue(propertyValue[x], resId);
                                         {
                                             propertyValue[x].GetType().GetMethod("SetDataBase").Invoke(propertyValue[x], new object[] { _database });
-                                            propertyValue[x].GetType().GetMethod("Update").Invoke(propertyValue[x], null);
+                                            object[] parameters = new object[] { new List<string>(), throwErrors };
+                                            ((MethodInfo[])propertyValue[x].GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[x], parameters);
+                                            addError(Errors, (List<string>)parameters[0]);
                                         }
                                     }
                                 }
@@ -397,13 +599,17 @@ namespace DapperEntityORM
                                     foreach (var pkey in propertyValue.Keys)
                                     {
                                         propertyValue[pkey].GetType().GetMethod("SetDataBase").Invoke(propertyValue[pkey], new object[] { _database });
-                                        propertyValue[pkey].GetType().GetMethod("Update").Invoke(propertyValue[pkey], null);
+                                        object[] parameters = new object[] { new List<string>(), throwErrors };
+                                        ((MethodInfo[])propertyValue[pkey].GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue[pkey], parameters);
+                                        addError(Errors, (List<string>)parameters[0]);
                                     }
                                 }
                                 else
                                 {
                                     propertyValue.GetType().GetMethod("SetDataBase").Invoke(propertyValue, new object[] { _database });
-                                    propertyValue.GetType().GetMethod("Update").Invoke(propertyValue, null);
+                                    object[] parameters = new object[] { new List<string>(), throwErrors };
+                                    ((MethodInfo[])propertyValue.GetType().GetMethods()).Where(m => m.Name == "Save" && m.ToString() == "Boolean Save(System.Collections.Generic.List`1[System.String] ByRef, Boolean)").FirstOrDefault()?.Invoke(propertyValue, parameters);
+                                    addError(Errors, (List<string>)parameters[0]);
                                 }
                             }
                         }
@@ -418,6 +624,13 @@ namespace DapperEntityORM
                 return false;
         }
 
+        private void addError(List<string> groupErrors, List<string> errors)
+        {             
+            foreach (var error in errors)
+            {
+                groupErrors.Add(error);
+            }
+        }
         #endregion
 
     }
