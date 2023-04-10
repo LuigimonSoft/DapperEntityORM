@@ -39,6 +39,14 @@ namespace DapperEntityORM.Attributes
         /// Table number in the relation table only for multiple tables or store procedure
         /// </summary>
         public int TableNumber { get; set; }
+        /// <summary>
+        /// Property to ignore column in an insert query
+        /// </summary>
+        public bool IgnoreInInsert { get; set; }
+        /// <summary>
+        /// Property to ignore column in an update query
+        /// </summary>
+        public bool IgnoreInUpdate { get; set; }
 
     }
 }

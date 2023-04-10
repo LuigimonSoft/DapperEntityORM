@@ -39,7 +39,12 @@ namespace DapperEntityORM.Attributes
         /// <summary>
         /// Allow empty string
         /// </summary>
-        public bool AllowEmpty { set; get; }
+        public bool AllowEmpty { set; get; } = true;
+
+        /// <summary>
+        /// Allow null value
+        /// </summary>
+        public bool AllowNull { set; get; } = true;
 
         /// <summary>
         /// Null custom error message
@@ -59,7 +64,7 @@ namespace DapperEntityORM.Attributes
         /// <summary>
         /// Minimum custom error message
         /// </summary>
-        public string ErrorminimumMessage { get; set; }
+        public string ErrorMinimumMessage { get; set; }
 
         /// <summary>
         /// RegEx custom error message
