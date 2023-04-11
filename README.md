@@ -76,9 +76,18 @@ Now with the employee you can update, delete or insert it to the database with t
 ```csharp
 employee.Update();
 ```
+or
+```csharp
+employee.Update(out List<string> errors);
+```
+
 ### insert
 ```csharp
 employee.Insert();
+```
+or 
+```csharp
+employee.Insert(out List<string> errors);
 ```
 ### delete
 ```csharp
@@ -96,7 +105,8 @@ DapperEntityORM also supports more advanced database operations such as filterin
 
 DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
 
-DapperEntityORM also supports validation of the fields of the model, you can use the `IsValid` method to validate the fields of the model, it will return a list of errors if the model is not valid.
+### Validation
+DapperEntityORM also supports validation of the fields of the model, you can use the `IsValid` method to validate the fields of the model and the update, insert method invoke IsValid method, it will return a list of errors if the model is not valid.
 ```csharp
 bool isValid = employee.IsValid(out List<string> errors);
 ``` 
