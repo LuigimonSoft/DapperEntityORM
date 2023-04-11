@@ -47,6 +47,11 @@ namespace DapperEntityORM.Attributes
         public bool AllowNull { set; get; } = true;
 
         /// <summary>
+        /// Allow null value
+        /// </summary>
+        public bool Required { set; get; } = false;
+
+        /// <summary>
         /// Null custom error message
         /// </summary>
         public string ErrorNullMessage { get; set; }
@@ -70,6 +75,11 @@ namespace DapperEntityORM.Attributes
         /// RegEx custom error message
         /// </summary>
         public string ErrorRegExMessage { get; set; }
+
+        /// <summary>
+        /// Required custom error message
+        /// </summary>
+        public string ErrorRequiredMessage { get; set; }
 
         /// <summary>
         /// Property to ignore column
