@@ -97,6 +97,10 @@ employee.Delete();
 ```csharp
 employee.Save();
 ```
+or
+```csharp
+employee.Save(out List<string> errors);
+```
 
 and if you want to insert or update the employee with his department and address information you can only add an item to the list address or modified the deparment data and the method update will do the rest for you. However, to delete a record, you must use the Delete function, and for linked tables, you will have to manually delete them using their respective Delete method.
 The method Save will do the rest for you, it will insert or update the record depending on the existence of the primary key in the database.
