@@ -131,6 +131,16 @@ namespace DapperEntityORM
 
                                 setError(Errors, ErrorMessage, throwErrors);
                             }
+                            if(column.Required && property.GetValue(this).ToString().Trim().Length == 0)
+                            {
+                                result = false;
+                                if (column.ErrorEmptyMessage != null)
+                                    ErrorMessage = column.ErrorEmptyMessage;
+                                else
+                                    ErrorMessage = string.Format("The value of the column {0} is required", property.Name);
+
+                                setError(Errors, ErrorMessage, throwErrors);
+                            }
                             if (column.RegExPattern != null && !System.Text.RegularExpressions.Regex.IsMatch(property.GetValue(this).ToString(), column.RegExPattern))
                             {
                                 result = false;

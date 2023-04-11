@@ -84,11 +84,35 @@ employee.Insert();
 ```csharp
 employee.Delete();
 ```
+### save
+```csharp
+employee.Save();
+```
+
 and if you want to insert or update the employee with his department and address information you can only add an item to the list address or modified the deparment data and the method update will do the rest for you. However, to delete a record, you must use the Delete function, and for linked tables, you will have to manually delete them using their respective Delete method.
+The method Save will do the rest for you, it will insert or update the record depending on the existence of the primary key in the database.
 
 DapperEntityORM also supports more advanced database operations such as filtering, ordering, and grouping records. You can use the `Select` method to retrieve records from the database with various filtering options, such as `WHERE`, `GROUP BY`, and `HAVING`. You can also use the `OrderBy` and `OrderByDescending` methods to sort records by one or more columns. Additionally, you can use the `Count`, `Sum`, `Min`, `Max`, and `Average` methods to retrieve aggregate data from the database.
 
 DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
+
+DapperEntityORM also supports validation of the fields of the model, you can use the `IsValid` method to validate the fields of the model, it will return a list of errors if the model is not valid.
+```csharp
+bool isValid = employee.IsValid(out List<string> errors);
+``` 
+The type of validation is defined by the attributes of the model, for example, if you want to validate that the field is not null, you can use the attribute `[Column(Required=true)]` and if you want to validate that the field has a maximum length, you can use the attribute `[Colum(MaxLength=50)]` and so on.
+
+### List validation attributes:
+- MaxLength
+- MinLength
+- AllowEmpty
+- Required
+- AllowNull
+- RegExPattern
+
+and you can modified the error message of the validation for example for MaxLength with the attribute `[Column(ErrorMaximunMessage="Error message")]`.
+
+and you can use the attribute `[Column("DatabaseNameColum")]` or `[Column(ColumName="DatabaseNameColum")]` to specify the name of the column in the database.
 
 ## Installation
 You can install DapperEntityORM using NuGet:
