@@ -9,7 +9,7 @@ To use DapperEntityORM, you need to create a model that represents a table in yo
 Here's an example of a model that represents an "Employee" table:
 
 ```csharp
-[Table("Employees")]
+[Table]
 public class Employees : Entity<Employees>
 {
     [Key(IsIdentity = true)]
@@ -108,6 +108,43 @@ The method Save will do the rest for you, it will insert or update the record de
 DapperEntityORM also supports more advanced database operations such as filtering, ordering, and grouping records. You can use the `Select` method to retrieve records from the database with various filtering options, such as `WHERE`, `GROUP BY`, and `HAVING`. You can also use the `OrderBy` and `OrderByDescending` methods to sort records by one or more columns. Additionally, you can use the `Count`, `Sum`, `Min`, `Max`, and `Average` methods to retrieve aggregate data from the database.
 
 DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
+### Attributes of the model
+The attributes of the model are used to define the name of the table and the name of the columns in the database, the primary key and the relationship between the tables.
+
+# Table
+ The attribute `[Table]` is used to define this class is a table in the database,you can specify the name of the database table with `[Table("NameofTable")]` or `[Table(TableName="NameofTable")]`,  if you do not specify the name of the table, the name of the model will be used as the name of the table in the database.
+
+ # Key
+The attribute `[Key]` is used to define the primary key of the table, you can specify the name of the primary key in the database with `[Key("NameofPrimaryKey")]` or `[Key(Name="NameofPrimaryKey")]`, if you do not specify the name of the primary key, the name of the property will be used as the name of the primary key in the database.
+
+you can specify if the primary key is autoincrement with `[Key(IsIdentity=true)]`, if you do not specify the primary key is autoincrement, the primary key will be not autoincrement.
+
+# Columns
+The attribute `[Column]` is used to define the columns of the table, you can specify the name of the column in the database with `[Column("NameofColumn")]` or `[Column(ColumName="NameofColumn")]`, if you do not specify the name of the column, the name of the property will be used as the name of the column in the database.
+The Column attribute also has other properties such as: 
+
+- `Required`: if the column is required, the value of the column cannot be null.
+- `AllowNull`: if the column allows null, the value of the column can be null.
+- `MaxLength`: if the column has a maximum length, the value of the column cannot exceed the maximum length.
+- `MinLength`: if the column has a minimum length, the value of the column cannot be less than the minimum length.
+- `AllowEmpty`: if the column allows empty, the value of the column can be empty.
+- `RegExPattern`: if the column has a regular expression pattern, the value of the column must match the regular expression pattern.
+- `ErrorMaximunMessage`: if the column has a maximum length, you can specify the error message of the maximum length.
+- `ErrorMinimunMessage`: if the column has a minimum length, you can specify the error message of the minimum length.
+- `ErrorRequiredMessage`: if the column is required, you can specify the error message of the required.
+- `ErrorAllowNullMessage`: if the column allows null, you can specify the error message of the allow null.
+- `ErrorAllowEmptyMessage`: if the column allows empty, you can specify the error message of the allow empty.
+- `ErrorRegExPatternMessage`: if the column has a regular expression pattern, you can specify the error message of the regular expression pattern.
+- `Ignore`: if the column is ignored, the column will not be used in the database operations.
+- `IgnoreInInsert`: if the column is ignored in insert, the column will not be used in the insert operation.
+- `IgnoreInUpdate`: if the column is ignored in update, the column will not be used in the update operation.
+- `IgnoreInDelete`: if the column is ignored in delete, the column will not be used in the delete operation.
+
+# Relationships
+The attribute `[Relation]` is used to define the relationship between the tables, you can specify the name of the foreign key in the database with `[Relation("NameofForeignKey")]` or `[Relation(ForeignKey="NameofForeignKey")]`, if you do not specify the name of the foreign key, the name of the property will be used as the name of the foreign key in the database.
+Additionally you can specify the table of the foreign key with `[Relation("NameofForeignKey", "NameofTable")]` or `[Relation(ForeignKey="NameofForeignKey", RelationTable="NameofTable")]`, if you do not specify the name of the table, the name of the property will be used as the name of the table in the database.
+if you use a store procedure and you want to load multiple tables at once then you can use the property `[Relation(TableNumber="TableNumber")]` or `[Relation(ForeignKey="NameofForeignKey", RelationTable="NameofTable", TableNumber="numberoftable")]`, if you do not specify the name of the number of table, the number of the table will be 0.
+Additionally the relation table is update when you update the main table if you can't update the relation table you can use the property `[Relation(IgnoreInUpdate=true)]` or `[Relation(IgnoreInInsert=true)].
 
 ### Validation
 DapperEntityORM also supports validation of the fields of the model, you can use the `IsValid` method to validate the fields of the model and the update, insert method invoke IsValid method, it will return a list of errors if the model is not valid.
@@ -125,8 +162,6 @@ The type of validation is defined by the attributes of the model, for example, i
 - RegExPattern
 
 and you can modified the error message of the validation for example for MaxLength with the attribute `[Column(ErrorMaximunMessage="Error message")]`.
-
-and you can use the attribute `[Column("DatabaseNameColum")]` or `[Column(ColumName="DatabaseNameColum")]` to specify the name of the column in the database.
 
 ## Installation
 You can install DapperEntityORM using NuGet:
