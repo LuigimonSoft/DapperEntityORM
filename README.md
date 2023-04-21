@@ -108,18 +108,18 @@ The method Save will do the rest for you, it will insert or update the record de
 DapperEntityORM also supports more advanced database operations such as filtering, ordering, and grouping records. You can use the `Select` method to retrieve records from the database with various filtering options, such as `WHERE`, `GROUP BY`, and `HAVING`. You can also use the `OrderBy` and `OrderByDescending` methods to sort records by one or more columns. Additionally, you can use the `Count`, `Sum`, `Min`, `Max`, and `Average` methods to retrieve aggregate data from the database.
 
 DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
-### Attributes of the model
+# Attributes of the model
 The attributes of the model are used to define the name of the table and the name of the columns in the database, the primary key and the relationship between the tables.
 
-# Table
+## Table
  The attribute `[Table]` is used to define this class is a table in the database,you can specify the name of the database table with `[Table("NameofTable")]` or `[Table(TableName="NameofTable")]`,  if you do not specify the name of the table, the name of the model will be used as the name of the table in the database.
 
- # Key
+ ## Key
 The attribute `[Key]` is used to define the primary key of the table, you can specify the name of the primary key in the database with `[Key("NameofPrimaryKey")]` or `[Key(Name="NameofPrimaryKey")]`, if you do not specify the name of the primary key, the name of the property will be used as the name of the primary key in the database.
 
 you can specify if the primary key is autoincrement with `[Key(IsIdentity=true)]`, if you do not specify the primary key is autoincrement, the primary key will be not autoincrement.
 
-# Columns
+## Columns
 The attribute `[Column]` is used to define the columns of the table, you can specify the name of the column in the database with `[Column("NameofColumn")]` or `[Column(ColumName="NameofColumn")]`, if you do not specify the name of the column, the name of the property will be used as the name of the column in the database.
 The Column attribute also has other properties such as: 
 
@@ -140,7 +140,7 @@ The Column attribute also has other properties such as:
 - `IgnoreInUpdate`: if the column is ignored in update, the column will not be used in the update operation.
 - `IgnoreInDelete`: if the column is ignored in delete, the column will not be used in the delete operation.
 
-# Relationships
+## Relationships
 The attribute `[Relation]` is used to define the relationship between the tables, you can specify the name of the foreign key in the database with `[Relation("NameofForeignKey")]` or `[Relation(ForeignKey="NameofForeignKey")]`, if you do not specify the name of the foreign key, the name of the property will be used as the name of the foreign key in the database.
 Additionally you can specify the table of the foreign key with `[Relation("NameofForeignKey", "NameofTable")]` or `[Relation(ForeignKey="NameofForeignKey", RelationTable="NameofTable")]`, if you do not specify the name of the table, the name of the property will be used as the name of the table in the database.
 if you use a store procedure and you want to load multiple tables at once then you can use the property `[Relation(TableNumber="TableNumber")]` or `[Relation(ForeignKey="NameofForeignKey", RelationTable="NameofTable", TableNumber="numberoftable")]`, if you do not specify the name of the number of table, the number of the table will be 0.
