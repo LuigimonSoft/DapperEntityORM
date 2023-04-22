@@ -200,6 +200,154 @@ namespace DapperEntityORM
 
         }
 
+        #region Async
+        public async Task<T?> SingleAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                if (_isCount)
+                    return await Conexion.QueryFirstOrDefaultAsync<T>(BuildCountQuery(), _dynamicParameters);
+                else
+                {
+                    var queryrest = await Conexion.QueryFirstOrDefaultAsync<T>(BuildSelectQuery(), _dynamicParameters);
+                    queryrest.GetType().GetMethod("SetDataBase").Invoke(queryrest, new[] { _dataBase });
+                    queryrest.GetType().GetMethod("SetisNoNew").Invoke(queryrest, null);
+                    queryrest = await LoadRelationAsync(queryrest);
+                    return queryrest;
+                }
+            }
+
+        }
+        
+        public async Task<IEnumerable<T>> ToEnumerableAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                var queryrest = await Conexion.QueryAsync<T>(BuildSelectQuery(), _dynamicParameters);
+                for (int x = 0; x < queryrest.Count(); x++)
+                {
+                    Type TypeElement = queryrest.ElementAt(x).GetType();
+                    TypeElement.GetMethod("SetDataBase").Invoke(queryrest.ElementAt(x), new[] { _dataBase });
+                    TypeElement.GetMethod("SetisNoNew").Invoke(queryrest.ElementAt(x), null);
+                    await LoadRelationAsync(queryrest.ElementAt(x));
+                }
+                return queryrest;
+            }
+        }
+
+        public async Task<List<T>> ToListAsync()
+        {
+            return (await ToEnumerableAsync()).ToList();
+        }
+        public async Task<Dictionary<object, T>> ToDictionaryAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                var values = await Conexion.QueryAsync<T>(BuildSelectQuery(), _dynamicParameters);
+                for (int x = 0; x < values.Count(); x++)
+                {
+                    values.ElementAt(x).GetType().GetMethod("SetDataBase").Invoke(values.ElementAt(x), new[] { _dataBase });
+                    values.ElementAt(x).GetType().GetMethod("SetisNoNew").Invoke(values.ElementAt(x), null);
+                    await LoadRelationAsync(values.ElementAt(x));
+                }
+
+                Dictionary<object, T> ResDic = new Dictionary<object, T>();
+                foreach (T value in values)
+                {
+                    var key = getPropertyKey(typeof(T)).GetValue(value);
+                    ResDic.Add(key, value);
+                }
+                return ResDic;
+            }
+        }
+
+        public async Task<Dictionary<string, T>> ToDictionaryKeyStringAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                var values = await ToListAsync();
+
+                Dictionary<string, T> ResDic = new Dictionary<string, T>();
+                foreach (T value in values)
+                {
+                    var key = (string)getPropertyKey(typeof(T)).GetValue(value);
+                    ResDic.Add(key, value);
+                }
+                return ResDic;
+            }
+        }
+
+        public async Task<Dictionary<Guid,T>> ToDictionaryKeyGuidAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                var values = await ToListAsync();
+
+                Dictionary<Guid, T> ResDic = new Dictionary<Guid, T>();
+                foreach (T value in values)
+                {
+                    var key = (Guid)getPropertyKey(typeof(T)).GetValue(value);
+                    ResDic.Add(key, value);
+                }
+                return ResDic;
+            }
+        }
+
+        public async Task<Dictionary<int, T>> ToDictionaryKeyIntAsync()
+        {
+            using (IDbConnection Conexion = _dataBase.Connection)
+            {
+                var values = await ToListAsync();
+
+                Dictionary<int, T> ResDic = new Dictionary<int, T>();
+                foreach (T value in values)
+                {
+                    var key = (int)getPropertyKey(typeof(T)).GetValue(value);
+                    ResDic.Add(key, value);
+                }
+                return ResDic;
+            }
+        }
+
+        private async Task<T?> LoadRelationAsync(T? queryrest)
+        {
+            foreach (PropertyInfo propertyrelation in GetPropertiesRelation(typeof(T)))
+            {
+                var AttributeRelation = propertyrelation.GetCustomAttribute<RelationAttribute>();
+                string relationColumn = String.IsNullOrEmpty(AttributeRelation.ForeignKey) ? getColumnName(propertyrelation, out bool isMap) : AttributeRelation.ForeignKey;
+                Type typeArgument = null;
+                if (propertyrelation.PropertyType.GenericTypeArguments.Count() > 1)
+                    typeArgument = propertyrelation.PropertyType.GenericTypeArguments[1];
+                else if (propertyrelation.PropertyType.GenericTypeArguments.Count() == 1)
+                    typeArgument = propertyrelation.PropertyType.GenericTypeArguments.Single();
+                else
+                    typeArgument = propertyrelation.PropertyType;
+                var resSelect = typeArgument.BaseType.BaseType.GetMethod("Select").Invoke(propertyrelation, new object[] { _dataBase }) as dynamic;
+                var resWhere = resSelect.Where($"{relationColumn} = @{relationColumn}", new List<object> { getPropertyKey(typeof(T)).GetValue(queryrest) });
+                if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
+                    propertyrelation.SetValue(queryrest, await resWhere.ToListAsync());
+                else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                {
+                    Type TypeKey = propertyrelation.PropertyType.GenericTypeArguments[0];
+
+                    if (TypeKey == typeof(string))
+                        propertyrelation.SetValue(queryrest,await resWhere.ToDictionaryKeyStringAsync());
+                    else if (TypeKey == typeof(Guid))
+                        propertyrelation.SetValue(queryrest,await resWhere.ToDictionaryKeyGuidAsync());
+                    else if (TypeKey == typeof(int) || TypeKey == typeof(Int32) || TypeKey == typeof(Int16))
+                        propertyrelation.SetValue(queryrest,await resWhere.ToDictionaryKeyIntAsync());
+                    else
+                        propertyrelation.SetValue(queryrest, await resWhere.ToDictionaryAsync());
+                }
+                else if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    propertyrelation.SetValue(queryrest, await resWhere.ToEnumerableAsync());
+                else
+                    propertyrelation.SetValue(queryrest, await resWhere.SingleAsync());
+            }
+            return queryrest;
+        }
+
+        #endregion
         private T? LoadRelation(T? queryrest)
         {
             foreach (PropertyInfo propertyrelation in GetPropertiesRelation(typeof(T)))
