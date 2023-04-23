@@ -5,9 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>1.0.1</Version>
-	  <VersionPrefix>1.0.1</VersionPrefix>
-	  <VersionSuffix>beta</VersionSuffix>
+    <Version>1.0.2</Version>
+	  <VersionPrefix>1.0.2</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>

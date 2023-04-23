@@ -70,6 +70,8 @@ or
 Employees employee = new Employees(database);
 employee.Load(2);
 ```
+in this case the employee object will be loaded with the data of the employee with the primary key = 2.
+
 Now with the employee you can update, delete or insert it to the database with the following methods:
 
 ### update
@@ -108,6 +110,29 @@ The method Save will do the rest for you, it will insert or update the record de
 DapperEntityORM also supports more advanced database operations such as filtering, ordering, and grouping records. You can use the `Select` method to retrieve records from the database with various filtering options, such as `WHERE`, `GROUP BY`, and `HAVING`. You can also use the `OrderBy` and `OrderByDescending` methods to sort records by one or more columns. Additionally, you can use the `Count`, `Sum`, `Min`, `Max`, and `Average` methods to retrieve aggregate data from the database.
 
 DapperEntityORM also supports other SQL commands such as `JOIN`, `UNION`, `INTERSECT`, and `EXCEPT`. These commands can be used by specifying a custom SQL query using the `Query` method. (Implementing in the future)
+
+## Execute query's results
+The results of the query's execution are returned with several methods:
+
+- `ToSingle()`: returns a single result of the query.
+- `ToEnumerable()`: returns an enumerable of the results of the query.
+- `ToList()`: returns a list of the results of the query.
+- `ToDictionary()`: returns a dictionary of the results of the query.
+- `ToDictionaryKeyString()`: returns a dictionary of the results of the query with the key as a string.
+- `ToDictionaryKeyGuid()`: returns a dictionary of the results of the query with the key as a Guid.
+- `ToDictionaryKeyInt()`: returns a dictionary of the results of the query with the key as an int.
+
+### Async methods
+All the methods of the query's execution are available in asynchronous mode, to use them you must add the suffix "Async" to the name of the method.
+
+- `ToSingleAsync()`: returns a single result of the query.
+- `ToEnumerableAsync()`: returns an enumerable of the results of the query.
+- `ToListAsync()`: returns a list of the results of the query.
+- `ToDictionaryAsync()`: returns a dictionary of the results of the query.
+- `ToDictionaryKeyStringAsync()`: returns a dictionary of the results of the query with the key as a string.
+- `ToDictionaryKeyGuidAsync()`: returns a dictionary of the results of the query with the key as a Guid.
+- `ToDictionaryKeyIntAsync()`: returns a dictionary of the results of the query with the key as an int.
+
 # Attributes of the model
 The attributes of the model are used to define the name of the table and the name of the columns in the database, the primary key and the relationship between the tables.
 
