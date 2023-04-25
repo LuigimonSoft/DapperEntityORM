@@ -161,7 +161,6 @@ The Column attribute also has other properties such as:
 - `ErrorAllowEmptyMessage`: if the column allows empty, you can specify the error message of the allow empty.
 - `ErrorRegExPatternMessage`: if the column has a regular expression pattern, you can specify the error message of the regular expression pattern.
 - `Ignore`: if the column is ignored, the column will not be used in the database operations.
-- `IgnoreInInsert`: if the column is ignored in insert, the column will not be used in the insert operation.
 - `IgnoreInUpdate`: if the column is ignored in update, the column will not be used in the update operation.
 - `IgnoreInDelete`: if the column is ignored in delete, the column will not be used in the delete operation.
 

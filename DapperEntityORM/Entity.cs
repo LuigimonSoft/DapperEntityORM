@@ -270,7 +270,17 @@ namespace DapperEntityORM
         }
         private List<PropertyInfo> GetPropertiesRelation(Type type)
         {
-            return type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType().Name == typeof(RelationAttribute).Name)).ToList();
+            return type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType() == typeof(RelationAttribute))).ToList();
+        }
+
+        private List<PropertyInfo> GetPropertiesRelationUpdatable(Type type)
+        {
+            return type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType() == typeof(RelationAttribute) && !((RelationAttribute)attr).IgnoreInUpdate)).ToList();
+        }
+
+        private List<PropertyInfo> GetPropertiesRelationInsertable(Type type)
+        {
+            return type.GetProperties().Where(p => p.GetCustomAttributes(true).Any(attr => attr.GetType() == typeof(RelationAttribute) && !((RelationAttribute)attr).IgnoreInInsert)).ToList();
         }
         private PropertyInfo? GetKeyProperty(Type type)
         {
@@ -401,10 +411,14 @@ namespace DapperEntityORM
                 string setSQL = string.Empty;
                 foreach (var property in _columnsModified)
                 {
+                    var columnattr = property.GetCustomAttributes(true).SingleOrDefault(attr => attr.GetType() == typeof(ColumnAttribute)) as ColumnAttribute;
                     string columnName = getColumnName(property, out bool isMapColumn);
-                    if (setSQL != string.Empty)
-                        setSQL += ",";
-                    setSQL += $" {columnName}=@{property.Name}";
+                    if (isMapColumn && !columnattr.IgnoreInUpdate)
+                    {
+                        if (setSQL != string.Empty)
+                            setSQL += ",";
+                        setSQL += $" {columnName}=@{property.Name}";
+                    }
                 }
                 
                 string idName = _columnNameResolver.ResolveKeyColumnName(propertyKey, _database.Encapsulation, out bool mapColum);
@@ -416,11 +430,13 @@ namespace DapperEntityORM
                     isNew = false;
                     if(resId > 0)
                     {
-                        foreach (PropertyInfo propertyrelation in GetPropertiesRelation(this.GetType()))
+                        foreach (PropertyInfo propertyrelation in GetPropertiesRelationUpdatable(this.GetType()))
                         {
+                            
                             var propertyValue = propertyrelation.GetValue(this, null) as dynamic;
                             if (propertyValue != null)
                             {
+                                
                                 if (propertyrelation.PropertyType.IsGenericType && propertyrelation.PropertyType.GetGenericTypeDefinition() == typeof(List<>))
                                 {
                                     for (int x = 0; x < propertyValue.Count; x++)
@@ -537,14 +553,18 @@ namespace DapperEntityORM
             {
                 foreach (var property in _columnsModified)
                 {
+                    var columnattr = property.GetCustomAttributes(true).SingleOrDefault(attr => attr.GetType() == typeof(ColumnAttribute)) as ColumnAttribute;
                     string columnName = getColumnName(property, out bool isMapColumn);
-                    if (InserColumnsSQL != string.Empty)
+                    if (isMapColumn && !columnattr.IgnoreInInsert)
                     {
-                        InserColumnsSQL += ",";
-                        InsertValuesSQL += ",";
+                        if (InserColumnsSQL != string.Empty)
+                        {
+                            InserColumnsSQL += ",";
+                            InsertValuesSQL += ",";
+                        }
+                        InserColumnsSQL += $" {columnName}";
+                        InsertValuesSQL += $" @{property.Name}";
                     }
-                    InserColumnsSQL += $" {columnName}";
-                    InsertValuesSQL += $" @{property.Name}";
                 }
                 if(propertyKey!=null)
                 {
@@ -583,7 +603,7 @@ namespace DapperEntityORM
                         resId = Conexion.Query<int>(sql, this).Single();
                         propertyKey.SetValue(this, resId);
 
-                        foreach (PropertyInfo propertyrelation in GetPropertiesRelation(this.GetType()))
+                        foreach (PropertyInfo propertyrelation in GetPropertiesRelationInsertable(this.GetType()))
                         {
                             var propertyValue = propertyrelation.GetValue(this, null) as dynamic;
                             RelationAttribute attributerelation = propertyrelation.GetCustomAttributes(true).Where(attr => attr.GetType() == typeof(RelationAttribute)).Single() as RelationAttribute;
