@@ -86,10 +86,7 @@ namespace DapperEntityORM.Attributes
         /// </summary>
         public bool Ignore { get; set; }
 
-        /// <summary>
-        /// Property to ignore column in an select query
-        /// </summary>
-        public bool IgnoreInSelect { get; set; }
+        
         /// <summary>
         /// Property to ignore column in an insert query
         /// </summary>
