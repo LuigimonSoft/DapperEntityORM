@@ -16,7 +16,7 @@
 #
 
 
-name: .NET Core Desktop
+name: Exec the Tests 
 
 on:
   push:
