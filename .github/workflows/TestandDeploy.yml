@@ -16,11 +16,9 @@
 #
 
 
-name: Exec the Tests 
+name: Checking all tests
 
 on:
-  push:
-    branches: [ "*" ]
   pull_request:
     branches: [ "*" ]
 
