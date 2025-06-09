@@ -20,7 +20,7 @@ namespace DapperEntityORM
         private readonly string _tableName;
         private string _whereClause = string.Empty;
         private string _orderByClause = string.Empty;
-        private string[] _selectColumns;
+        private string[] _selectColumns = Array.Empty<string>();
         private DynamicParameters _dynamicParameters;
         private readonly DataBase _dataBase;
         private bool _isCount = false;
@@ -388,12 +388,12 @@ namespace DapperEntityORM
         private string BuildSelectQuery()
         {
 
-            if (!_selectColumns.Any())
+            if (_selectColumns == null || !_selectColumns.Any())
             {
                 bool mapColum;
                 IColumnNameResolver _columnNameResolver = new ColumnNameResolver();
                 _selectColumns = new string[] { _columnNameResolver.ResolveKeyColumnName(getPropertyKey(typeof(T)), _dataBase.Encapsulation, out mapColum) };
-                getColumnsNames(typeof(T)).ForEach(x => _selectColumns.Append(x));
+                getColumnsNames(typeof(T)).ForEach(x => _selectColumns = _selectColumns.Append(x).ToArray());
             }
             
             string columns = string.Join(", ", _selectColumns);
@@ -404,7 +404,7 @@ namespace DapperEntityORM
 
         private string BuildCountQuery()
         {
-            string ColumnCount = _selectColumns.Any() ? _selectColumns[0] : "*";
+            string ColumnCount = (_selectColumns != null && _selectColumns.Any()) ? _selectColumns[0] : "*";
             var query = $"SELECT COUNT({ColumnCount}) FROM {_tableName} {_whereClause}";
             return query;
         }
