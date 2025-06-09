@@ -40,21 +40,21 @@ namespace DapperEntityORM
         private string GetOperator(ExpressionType nodeType)
         {
             if (nodeType == ExpressionType.AndAlso)
-                return " AND ";
+                return "AND";
             else if (nodeType == ExpressionType.OrElse)
-                return " OR ";
+                return "OR";
             else if (nodeType == ExpressionType.Equal)
-                return " = ";
+                return "=";
             else if (nodeType == ExpressionType.NotEqual)
-                return " <> ";
+                return "<>";
             else if (nodeType == ExpressionType.GreaterThan)
-                return " > ";
+                return ">";
             else if (nodeType == ExpressionType.GreaterThanOrEqual)
-                return " >= ";
+                return ">=";
             else if (nodeType == ExpressionType.LessThan)
-                return " < ";
+                return "<";
             else if (nodeType == ExpressionType.LessThanOrEqual)
-                return " <= ";
+                return "<=";
             else
                 throw new NotSupportedException($"The binary operator '{nodeType}' is not supported");
 
