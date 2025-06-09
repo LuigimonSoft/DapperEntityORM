@@ -7,6 +7,10 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Version>1.0.3</Version>
 	  <VersionPrefix>1.0.3</VersionPrefix>
+    <DefaultItemExcludes>
+      $(DefaultItemExcludes);
+      **/._*
+    </DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,5 +29,6 @@
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
   </ItemGroup>
+  
 
 </Project>
