@@ -3,7 +3,7 @@ name: Checking all tests
 
 on:
   pull_request:
-    branches: [ "master" ]
+    branches: [ "*" ]
 
 jobs:
 
@@ -40,7 +40,7 @@ jobs:
       run: dotnet test --no-restore --configuration ${{ matrix.configuration }}
 
     - name: install dotnet-coverage
-      run: dotnet tool install --global dotnet-coverage
+      run: dotnet tool install --global dotnet-coverage --version 17.13.1
 
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool

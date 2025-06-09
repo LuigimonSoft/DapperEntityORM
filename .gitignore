@@ -411,4 +411,7 @@ DapperEntityORM/obj/project.assets.json
 DapperEntityORM/obj/DapperEntityORM.csproj.nuget.g.props
 DapperEntityORM/obj/DapperEntityORM.csproj.nuget.dgspec.json
 
+# Mac files
+.DS_Store
+._*
 # End 
