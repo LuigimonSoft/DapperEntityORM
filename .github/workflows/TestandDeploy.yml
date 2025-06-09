@@ -1,26 +1,9 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow will build, test, sign and package a WPF or Windows Forms desktop application
-# built on .NET Core.
-# To learn how to migrate your existing application to .NET Core,
-# refer to https://docs.microsoft.com/en-us/dotnet/desktop-wpf/migration/convert-project-from-net-framework
-#
-# To configure this workflow:
-#
-# 1. Configure environment variables
-# GitHub sets default environment variables for every workflow run.
-# Replace the variables relative to your project in the "env" section below.
-#
-
 
 name: Checking all tests
 
 on:
   pull_request:
-    branches: [ "*" ]
+    branches: [ "master" ]
 
 jobs:
 
@@ -30,24 +13,68 @@ jobs:
       matrix:
         configuration: [Debug, Release]
 
-    runs-on: ubuntu-latest  # For a list of available runner types, refer to
-                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: ubuntu-latest  
+                             
 
     env:
-      Solution_Name: DapperEntityORM.sln                         # Replace with your solution name, i.e. MyWpfApp.sln.
+      Solution_Name: DapperEntityORM.sln    
       Test_Project_Path: DapperEntityORM.csproj 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-
-    # Install the .NET Core workload
+        
     - name: Install .NET Core
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.x.x
 
-    # Execute all unit tests in the solution
-    - name: Execute unit tests
-      run: dotnet test
+    - name: Restore dependencies
+      run: dotnet restore
+        
+    - name: Build
+      run: dotnet build --no-restore --configuration ${{ matrix.configuration }}
+    
+    - name: Execute unit test
+      run: dotnet test --no-restore --configuration ${{ matrix.configuration }}
+
+    - name: install dotnet-coverage
+      run: dotnet tool install --global dotnet-coverage
+
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+
+    - name: Cache SonarQube Cloud packages
+      uses: actions/cache@v4
+      with:
+        path: ~\sonar\cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Cache SonarQube Cloud scanner
+      id: cache-sonar-scanner
+      uses: actions/cache@v4
+      with:
+        path: ~\sonar\cache
+        key: ${{ runner.os }}-sonar-scanner
+        restore-keys: ${{ runner.os }}-sonar-scanner
+
+    - name: Install SonarQube Cloud scanner
+      run: dotnet tool install --global dotnet-sonarscanner
+
+    - name: SonarCloud - Begin Analysis
+      run: |
+        dotnet sonarscanner begin /k:"${{ secrets.SONAR_PROJECT_KEY }}" \
+          /o:"${{ env.SONAR_ORG }}" \
+          /d:sonar.host.url="https://sonarcloud.io" \
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+          /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
+      
+    
+
+    - name: Run Tests with Coverage
+      run: dotnet-coverage collect "dotnet test --no-build --configuration ${{ matrix.configuration }}" -f xml -o "coverage.xml"
+             
+    - name: SonarCube - SonaCloud -> End
+      run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
