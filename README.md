@@ -198,3 +198,9 @@ PM> Install-Package DapperEntityORM
 
 ## License
 DapperEntityORM is licensed under the MIT License.
+
+## Sonar Qube
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=LuigimonSoft_DapperEntityORM)](https://sonarcloud.io/summary/new_code?id=LuigimonSoft_DapperEntityORM)
+[![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=LuigimonSoft_DapperEntityORM)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=LuigimonSoft_DapperEntityORM&metric=coverage)](https://sonarcloud.io/summary/new_code?id=LuigimonSoft_DapperEntityORM)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=LuigimonSoft_DapperEntityORM&metric=bugs)](https://sonarcloud.io/summary/new_code?id=LuigimonSoft_DapperEntityORM)
