@@ -9,7 +9,7 @@ using Dapper;
 
 namespace DapperEntityORM
 {
-    internal class WhereVisitor : ExpressionVisitor
+    public class WhereVisitor : ExpressionVisitor
     {
         private DynamicParameters _dynamicParameters = new DynamicParameters();
         private readonly List<string> _clauses;
