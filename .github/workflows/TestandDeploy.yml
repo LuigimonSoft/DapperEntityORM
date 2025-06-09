@@ -43,7 +43,7 @@ jobs:
       run: dotnet tool install --global dotnet-coverage --version 17.13.1
 
     - name: Install ReportGenerator
-      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.3.11
 
     - name: Cache SonarQube Cloud packages
       uses: actions/cache@v4
