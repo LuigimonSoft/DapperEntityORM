@@ -76,5 +76,5 @@ jobs:
     - name: Run Tests with Coverage
       run: dotnet-coverage collect "dotnet test --no-build --configuration ${{ matrix.configuration }}" -f xml -o "coverage.xml"
              
-    - name: SonarCube - SonaCloud -> End
+    - name: SonarCube - SonaCloud -> SonarCloud - End Analysis
       run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
