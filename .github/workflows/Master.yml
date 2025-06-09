@@ -1,9 +1,8 @@
-
-name: Checking all tests
+name: Test and Verify merge in Master branch
 
 on:
-  pull_request:
-    branches: [ "*" ]
+  push:
+    branches: [ "master" ]
 
 jobs:
 
