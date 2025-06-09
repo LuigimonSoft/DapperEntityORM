@@ -410,7 +410,9 @@ DapperEntityORM/obj/project.nuget.cache
 DapperEntityORM/obj/project.assets.json
 DapperEntityORM/obj/DapperEntityORM.csproj.nuget.g.props
 DapperEntityORM/obj/DapperEntityORM.csproj.nuget.dgspec.json
-
+# obj directory is used for build outputs, so we ignore it
+DapperEntityORM/obj/
+DapperEntityORM/obj/*
 # Mac files
 .DS_Store
 ._*
