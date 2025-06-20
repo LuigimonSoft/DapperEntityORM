@@ -8,6 +8,6 @@ namespace DapperEntityORM.Database.Dialects
         public DataBaseTypes DataBaseType => DataBaseTypes.SQLServer;
         public string Encapsulation => "[{0}]";
         public string GetIdentitySql => "SELECT CAST(SCOPE_IDENTITY()  AS BIGINT) AS [id]";
-        public string GetPagedListSql => "SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY {OrderBy}) AS PagedNumber, {SelectColumns} FROM {TableName} {WhereClause}) AS u WHERE PagedNUMBER BETWEEN (({PageNumber}-1) * {RowsPerPage} + 1) AND ({PageNumber} * {RowsPerPage})";
+        public string GetPagedListSql => "SELECT * FROM (SELECT ROW_NUMBER() OVER(ORDER BY {OrderBy}) AS PagedNumber, {SelectColumns} FROM {TableName} {WhereClause}) AS u WHERE PagedNumber BETWEEN (({PageNumber}-1) * {RowsPerPage} + 1) AND ({PageNumber} * {RowsPerPage})";
     }
 }
